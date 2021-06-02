@@ -29,12 +29,12 @@ cd your_project_name
 yarn install
 
 # Now you can run various yarn commands:
-yarn cli
 yarn lint
 yarn test
+yarn dev
 yarn build-all
 yarn ts-node <filename>
-yarn esbuild-browser
+yarn esbuild
 ...
 ```
 
@@ -47,12 +47,9 @@ yarn esbuild-browser
 
 ```bash
 # Build for browsers
-yarn esbuild-browser:dev
-yarn esbuild-browser:watch
+yarn esbuild:dev
+yarn esbuild:watch
 
-# Build the cli for node
-yarn esbuild-node:dev
-yarn esbuild-node:watch
 ```
 
 You can generate a full clean build with `yarn build-all` (which uses both `tsc` and `esbuild`).
