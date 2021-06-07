@@ -34,15 +34,11 @@ export const setup = (): void => {
     scene
   );
   camera.attachControl(engine.getRenderingCanvas(), true);
+  camera.wheelPrecision = 50; // Lower zoom sensitivity
 
   const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
   light.intensity = 0.7;
 
-  // const box = MeshBuilder.CreateBox('box', {}, scene);
-  // box.material = new StandardMaterial('mat', scene);
-
-  // box.material.wireframe = true;
-  // console.log('box.material!', Material, 1, box.material);
   new Voxel(Vector3.Zero(), { gridSize: GRID_SIZE, isoLevel: 0.5 }, scene);
 };
 
