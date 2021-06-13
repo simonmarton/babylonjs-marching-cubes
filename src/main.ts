@@ -5,6 +5,7 @@ import {
   HemisphericLight,
   Vector3,
   Nullable,
+  Color3,
 } from 'babylonjs';
 
 import Voxel from './voxel';
@@ -37,7 +38,8 @@ export const setup = (): void => {
   camera.wheelPrecision = 50; // Lower zoom sensitivity
 
   const light = new HemisphericLight('light', new Vector3(0, 1, 0), scene);
-  light.intensity = 0.7;
+  light.intensity = 1.2;
+  scene.ambientColor = Color3.White();
 
   new Voxel(Vector3.Zero(), { gridSize: GRID_SIZE, isoLevel: 0.5 }, scene);
 };
