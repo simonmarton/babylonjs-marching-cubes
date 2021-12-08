@@ -1,10 +1,15 @@
 <html>
   <head>
+    <meta
+      http-equiv="origin-trial"
+      content="Amu7sW/oEH3ZqF6SQcPOYVpF9KYNHShFxN1GzM5DY0QW6NwGnbe2kE/YyeQdkSD+kZWhmRnUwQT85zvOA5WYfgAAAABJeyJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJmZWF0dXJlIjoiV2ViR1BVIiwiZXhwaXJ5IjoxNjUyODMxOTk5fQ=="
+    />
     <script src="./dist/esbuild/browser.js"></script>
     <style>
       * {
         padding: 0;
         margin: 0;
+        font-family: sans-serif;
       }
       body {
         overflow: hidden;
@@ -17,7 +22,17 @@
         touch-action: none;
         outline: none;
       }
+      #fps {
+        position: absolute;
+        top: 10px;
+        right: 0;
+        padding: 5px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #eee;
+      }
     </style>
   </head>
-  <body></body>
+  <body>
+    <div id="fps">loading..</div>
+  </body>
 </html>

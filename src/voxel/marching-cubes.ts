@@ -1,4 +1,4 @@
-import { Vector3 } from 'babylonjs';
+import { Vector3 } from '@babylonjs/core/Maths/math';
 
 import { CubicArray, FixedSizeArray, TriangulationEntry } from '../models';
 import { getEdgeCornerIndices, triangulationTable } from './march-tables';

@@ -12,7 +12,10 @@ esbuild
     bundle: true,
     outfile: 'dist/esbuild/browser.js',
     banner: {
-      js: ' (() => new EventSource("/esbuild").onmessage = () => location.reload())();',
+      js: '(() => new EventSource("/esbuild").onmessage = () => location.reload())();',
+    },
+    loader: {
+      '.wgsl': 'text',
     },
     watch: {
       onRebuild(error) {
@@ -23,6 +26,19 @@ esbuild
     },
   })
   .catch(() => process.exit(1));
+
+// esbuild.build({
+//   entryPoints: ['src/worker.ts'],
+//   bundle: true,
+//   outfile: 'public/scripts/worker.js',
+//   watch: {
+//     onRebuild(error) {
+//       clients.forEach((res) => res.write('data: update\n\n'));
+//       clients.length = 0;
+//       console.log(error ? error : 'rebuilt worker..');
+//     },
+//   },
+// });
 
 esbuild.serve({ servedir: './' }, {}).then(() => {
   createServer((req, res) => {
@@ -36,9 +52,20 @@ esbuild.serve({ servedir: './' }, {}).then(() => {
         })
       );
     }
-    const path = url.split('/').pop().includes('.')
-      ? url
-      : `/public/index.html`; //for PWA with router
+
+    const urlParts = url.split('/').filter((p) => p);
+
+    const publicDirs = ['scripts'];
+    let path;
+    if (publicDirs.includes(urlParts[0])) {
+      path = `/public/${url}`;
+    } else if (urlParts.length && urlParts.pop().includes('.')) {
+      path = url;
+    } else {
+      // for PWA with router
+      path = `/public/index.html`;
+    }
+
     req.pipe(
       request(
         { hostname: '0.0.0.0', port: 8000, path, method, headers },

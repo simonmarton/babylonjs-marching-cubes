@@ -1,28 +1,27 @@
-import {
-  Engine,
-  Scene,
-  ArcRotateCamera,
-  HemisphericLight,
-  Vector3,
-  Nullable,
-  Color3,
-} from 'babylonjs';
+import { Engine } from '@babylonjs/core/engines/engine';
+import { Scene } from '@babylonjs/core/scene';
+import { Nullable } from '@babylonjs/core/types';
+import { HemisphericLight } from '@babylonjs/core/lights';
+import { ArcRotateCamera } from '@babylonjs/core/cameras';
+import { Vector3, Color3 } from '@babylonjs/core/maths/math';
 
+import IntensityCalculator from './intensity-calculator';
 import Voxel from './voxel';
 
-const GRID_SIZE = 1;
-
-const createEngine = (): Engine => {
-  const canvas = document.createElement('canvas');
-  document.body.appendChild(canvas);
-
-  return new Engine(canvas, true, {});
-};
+const GRID_SIZE = 12;
+const HALF_GRID = GRID_SIZE / 2;
+const DEBUG = 0;
+const SHOW_FPS = true;
 
 let scene: Nullable<Scene> = null;
 
-export const setup = (): void => {
-  const engine = createEngine();
+const createScene = (): Scene => {
+  console.time('createScene');
+  const canvas = document.createElement('canvas');
+  document.body.appendChild(canvas);
+
+  const engine = new Engine(canvas, true, {});
+
   scene = new Scene(engine);
   window.addEventListener('resize', () => engine.resize());
 
@@ -30,9 +29,14 @@ export const setup = (): void => {
     'camera',
     -Math.PI / 2,
     Math.PI / 2.5,
-    3,
-    new Vector3(GRID_SIZE / 2, GRID_SIZE / 2, GRID_SIZE / 2),
+    GRID_SIZE * 3,
+    Vector3.Zero(),
     scene
+  );
+  camera.position = new Vector3(
+    GRID_SIZE * 2,
+    GRID_SIZE * 1.5,
+    GRID_SIZE * 1.5
   );
   camera.attachControl(engine.getRenderingCanvas(), true);
   camera.wheelPrecision = 50; // Lower zoom sensitivity
@@ -41,14 +45,89 @@ export const setup = (): void => {
   light.intensity = 1.2;
   scene.ambientColor = Color3.White();
 
-  new Voxel(Vector3.Zero(), { gridSize: GRID_SIZE, isoLevel: 0.5 }, scene);
+  console.timeEnd('createScene');
+  return scene;
+};
+
+const createVoxels = (scene: Scene): Voxel[] => {
+  console.time('createVoxels');
+  const intensityCalculator = new IntensityCalculator(
+    `x*x+y*y+z*z-${Math.pow(HALF_GRID * 0.8, 2)}`
+  ); //${GRID_SIZE}
+
+  const voxelCount = Math.pow(GRID_SIZE, 3);
+  console.log('creating voxels', voxelCount);
+
+  const voxels: Voxel[] = [];
+
+  const calc = async (from: number, to: number): Promise<void> => {
+    console.log('getting voxels', from, to);
+    return new Promise((res) => {
+      for (let i = from; i < to; i++) {
+        const x = i % GRID_SIZE;
+        const y = (i - x) / GRID_SIZE;
+        const z = Math.floor(y / GRID_SIZE);
+
+        voxels.push(
+          new Voxel(
+            new Vector3(
+              x - HALF_GRID,
+              (y % GRID_SIZE) - HALF_GRID,
+              z - HALF_GRID
+            ),
+            { gridSize: 1, isoLevel: 0, debug: !!DEBUG },
+            intensityCalculator,
+            scene
+          )
+        );
+      }
+
+      res();
+    });
+  };
+
+  const chucks = 4;
+  const chuckSize = voxelCount / chucks;
+  const promises = [...Array(chucks)].map((_, i) =>
+    calc(chuckSize * i, chuckSize * (i + 1))
+  );
+  Promise.all(promises);
+
+  // for (let x = -HALF_GRID; x < HALF_GRID; x++) {
+  //   for (let y = -HALF_GRID; y < HALF_GRID; y++) {
+  //     for (let z = -HALF_GRID; z < HALF_GRID; z++) {
+  //       // console.log('Voxel!', x, y, z);
+  //       voxels.push(
+  //         new Voxel(
+  //           new Vector3(x, y, z),
+  //           { gridSize: 1, isoLevel: 0, debug: !!DEBUG },
+  //           intensityCalculator,
+  //           scene
+  //         )
+  //       );
+  //     }
+  //   }
+  // }
+  console.timeEnd('createVoxels');
+
+  return voxels;
+};
+
+export const setup = (): void => {
+  scene = createScene();
+
+  createVoxels(scene);
+  // new Voxel(Vector3.Zero(), { gridSize: GRID_SIZE, isoLevel: 0.5 }, scene);
 };
 
 export const startLoop = (): void => {
   if (!scene) {
     throw new Error('Scene is null');
   } else {
-    scene.getEngine().runRenderLoop(() => {
+    const engine = scene.getEngine();
+    const fps = document.getElementById('fps');
+    engine.runRenderLoop(() => {
+      if (fps && SHOW_FPS) fps.innerText = `${engine.getFps().toFixed()} FPS`;
       scene!.render();
     });
   }

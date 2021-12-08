@@ -1,15 +1,22 @@
-import {
-  ActionManager,
-  Color3,
-  ExecuteCodeAction,
-  Mesh,
-  MeshBuilder,
-  Scene,
-  StandardMaterial,
-  Vector3,
-  VertexData,
-} from 'babylonjs';
-import { AdvancedDynamicTexture, TextBlock } from 'babylonjs-gui';
+// import {
+//   ActionManager,
+//   Color3,
+//   ExecuteCodeAction,
+//   Mesh,
+//   MeshBuilder,
+//   Scene,
+//   StandardMaterial,
+//   Vector3,
+//   VertexData,
+// } from 'babylonjs';
+import { Scene } from '@babylonjs/core/Scene';
+import { Vector3, Color3 } from '@babylonjs/core/Maths/math';
+import { Mesh, MeshBuilder, VertexData } from '@babylonjs/core/Meshes';
+import { StandardMaterial } from '@babylonjs/core/Materials';
+
+import { AdvancedDynamicTexture, TextBlock } from '@babylonjs/gui';
+
+import IntensityCalculator from '../intensity-calculator';
 
 import { CubicArray } from '../models';
 import { getTriangles, MarchingCubeCorner } from './marching-cubes';
@@ -33,21 +40,28 @@ type Gizmo = Mesh & {
 export default class Voxel {
   private corners: VoxelCorner[] = [];
   private static gui: AdvancedDynamicTexture;
+  private id: string;
+  private labelMeshMaterial?: StandardMaterial;
 
   constructor(
     private origin: Vector3,
     private options: VoxelOptions,
+    private intensityCalculator: IntensityCalculator,
     private scene: Scene
   ) {
-    // TODO should be static singleton
-    Voxel.gui = AdvancedDynamicTexture.CreateFullscreenUI('gui');
+    if (options.debug) {
+      if (!Voxel.gui) {
+        Voxel.gui = AdvancedDynamicTexture.CreateFullscreenUI('gui');
+      }
+
+      this.labelMeshMaterial = new StandardMaterial('mat', this.scene);
+      // this.createEdges();
+    }
+
+    this.id = `voxel-${origin.x}-${origin.y}-${origin.z}`;
 
     this.createCorners();
     this.calculateTris();
-
-    if (options.debug) {
-      this.createEdges();
-    }
   }
 
   private createCorners() {
@@ -66,16 +80,17 @@ export default class Voxel {
     ];
 
     this.corners = coords.map((coord, idx) => {
-      const intensity = this.getIntensity(coord);
-      let gizmo: Gizmo | null = null;
+      const intensity = this.intensityCalculator.getIntensity(coord);
+      // let gizmo: Gizmo | null = null;
 
       if (this.options.debug) {
-        gizmo = this.createCornerGizmo(idx, coord, intensity);
+        // gizmo = this.createCornerGizmo(idx, coord, intensity);
+        this.addValueLabel(idx, coord, intensity);
       }
 
       return {
         coord,
-        gizmo,
+        // gizmo,
         intensity,
       };
     });
@@ -84,18 +99,22 @@ export default class Voxel {
   private calculateTris(): void {
     const marchingCubeCorners = this.corners.map(({ coord, intensity }) => ({
       position: coord,
-      isEnabled: intensity > 0.5,
+      isEnabled: intensity > this.options.isoLevel,
     })) as unknown as CubicArray<MarchingCubeCorner>;
     const tris = getTriangles(marchingCubeCorners);
+    // console.log('tris length', tris.length);
+    if (tris.length === 0) {
+      return;
+    }
 
     let positions: number[] = [];
     tris.forEach((tri) => {
       positions = positions.concat(...tri.map(({ x, y, z }) => [x, y, z]));
     });
 
-    let mesh: Mesh = this.scene.getMeshByID('tris') as Mesh;
+    let mesh: Mesh = this.scene.getMeshByID(this.id) as Mesh;
     if (!mesh) {
-      mesh = new Mesh('tris', this.scene);
+      mesh = new Mesh(this.id, this.scene);
     }
 
     const vertices = new VertexData();
@@ -113,15 +132,33 @@ export default class Voxel {
     vertices.applyToMesh(mesh);
   }
 
-  // TODO: get this from a service
-  private getIntensity = (coords: Vector3): number => Math.round(Math.random());
+  private addValueLabel(
+    idx: number,
+    position: Vector3,
+    intensity: number
+  ): void {
+    const id = `label-${this.id}-${idx}`;
+    const label = new TextBlock(`${id}_label`, intensity.toFixed(2));
+
+    const mesh = MeshBuilder.CreateBox('box', { size: 0.02 }, this.scene);
+    mesh.material = this.labelMeshMaterial!;
+    (mesh.material as StandardMaterial).diffuseColor =
+      intensity < this.options.isoLevel ? Color3.Black() : Color3.White();
+    mesh.position = position;
+
+    label.color = '#999';
+    Voxel.gui.addControl(label);
+    label.linkWithMesh(mesh);
+    label.linkOffsetX = 50;
+    label.linkOffsetY = 25;
+  }
 
   private createCornerGizmo(
     idx: number,
     position: Vector3,
     intensity: number
   ): Gizmo {
-    const id = `gizmo_${idx}`;
+    const id = `gizmo-${this.id}-${idx}`;
 
     const gizmo = MeshBuilder.CreateIcoSphere(
       id,
@@ -132,28 +169,29 @@ export default class Voxel {
     gizmo.material = new StandardMaterial('mat', this.scene);
 
     // Add gizmo label
-    const label = new TextBlock(`${id}_label`, idx.toString());
+    const label = new TextBlock(`${id}_label`, 'cica');
     Voxel.gui.addControl(label);
     label.color = '#999';
     label.linkWithMesh(gizmo);
     label.linkOffsetX = 50;
     label.linkOffsetY = 25;
 
-    gizmo.actionManager = new ActionManager(this.scene);
-    gizmo.actionManager.registerAction(
-      new ExecuteCodeAction(ActionManager.OnPickTrigger, (_evt) => {
-        const intensity = +!this.corners[idx].intensity;
-        this.corners[idx].intensity = intensity;
+    // gizmo.actionManager = new ActionManager(this.scene);
+    // gizmo.actionManager.registerAction(
+    //   new ExecuteCodeAction(ActionManager.OnPickTrigger, (_evt) => {
+    //     const intensity = +!this.corners[idx].intensity;
+    //     this.corners[idx].intensity = intensity;
 
-        gizmo.updateIntensity(intensity);
-        this.calculateTris();
-      })
-    );
+    //     gizmo.updateIntensity(intensity);
+    //     this.calculateTris();
+    //   })
+    // );
 
     gizmo.updateIntensity = (intensity) => {
-      (gizmo.material as StandardMaterial).diffuseColor =
-        intensity < this.options.isoLevel ? Color3.Black() : Color3.White();
-      label.text = idx.toString();
+      // (gizmo.material as StandardMaterial).diffuseColor =
+      //   intensity < this.options.isoLevel ? Color3.Black() : Color3.White();
+      // label.text = idx.toString();
+      label.text = intensity.toFixed(2);
     };
 
     gizmo.updateIntensity(intensity);
@@ -162,7 +200,7 @@ export default class Voxel {
   }
 
   private createEdges() {
-    MeshBuilder.CreateLines(
+    const x = MeshBuilder.CreateLines(
       'edges',
       {
         points: [
@@ -186,5 +224,6 @@ export default class Voxel {
       },
       this.scene
     );
+    x.color = new Color3(Math.random(), Math.random(), Math.random());
   }
 }
