@@ -8,7 +8,8 @@ import { Vector3, Color3 } from '@babylonjs/core/maths/math';
 import IntensityCalculator from './intensity-calculator';
 import Voxel from './voxel';
 
-const GRID_SIZE = 12;
+const GRID_SIZE = 2;
+// const GRID_SIZE = 12;
 const HALF_GRID = GRID_SIZE / 2;
 const DEBUG = 0;
 const SHOW_FPS = true;
@@ -52,46 +53,30 @@ const createScene = (): Scene => {
 const createVoxels = (scene: Scene): Voxel[] => {
   console.time('createVoxels');
   const intensityCalculator = new IntensityCalculator(
-    `x*x+y*y+z*z-${Math.pow(HALF_GRID * 0.8, 2)}`
-  ); //${GRID_SIZE}
+    // `x*x+y*y+z*z-${Math.pow(HALF_GRID * 0.8, 2)}`
+    `y -   1`
+  );
 
   const voxelCount = Math.pow(GRID_SIZE, 3);
   console.log('creating voxels', voxelCount);
 
   const voxels: Voxel[] = [];
 
-  const calc = async (from: number, to: number): Promise<void> => {
-    console.log('getting voxels', from, to);
-    return new Promise((res) => {
-      for (let i = from; i < to; i++) {
-        const x = i % GRID_SIZE;
-        const y = (i - x) / GRID_SIZE;
-        const z = Math.floor(y / GRID_SIZE);
+  for (let i = 0; i < voxelCount; i++) {
+    const x = i % GRID_SIZE;
+    const y = (i - x) / GRID_SIZE;
+    const z = Math.floor(y / GRID_SIZE);
 
-        voxels.push(
-          new Voxel(
-            new Vector3(
-              x - HALF_GRID,
-              (y % GRID_SIZE) - HALF_GRID,
-              z - HALF_GRID
-            ),
-            { gridSize: 1, isoLevel: 0, debug: !!DEBUG },
-            intensityCalculator,
-            scene
-          )
-        );
-      }
-
-      res();
-    });
-  };
-
-  const chucks = 4;
-  const chuckSize = voxelCount / chucks;
-  const promises = [...Array(chucks)].map((_, i) =>
-    calc(chuckSize * i, chuckSize * (i + 1))
-  );
-  Promise.all(promises);
+    voxels.push(
+      new Voxel(
+        // new Vector3(x - HALF_GRID, (y % GRID_SIZE) - HALF_GRID, z - HALF_GRID),
+        new Vector3(x, y % GRID_SIZE, z),
+        { gridSize: 1, isoLevel: 0, debug: !!DEBUG },
+        intensityCalculator,
+        scene
+      )
+    );
+  }
 
   // for (let x = -HALF_GRID; x < HALF_GRID; x++) {
   //   for (let y = -HALF_GRID; y < HALF_GRID; y++) {

@@ -1,6 +1,7 @@
 /// <reference types="@webgpu/types" />
 
-import shaderCode from './marching-cubes.wgsl';
+import triangulationTable from './triangulation-table.wgsl';
+import marchingCubesShader from './marching-cubes.wgsl';
 
 interface Serializable {
   toFloat32Array: () => Float32Array;
@@ -12,10 +13,13 @@ class ComputeShader {
   private gpuReadBuffer!: GPUBuffer;
   private trisBufferSize: number;
   private triCountBufferSize: number;
+  private shader: string;
 
   constructor(private input: Serializable, private maxTriCount: number) {
     this.trisBufferSize = this.maxTriCount * 3 * Float32Array.BYTES_PER_ELEMENT;
     this.triCountBufferSize = Int32Array.BYTES_PER_ELEMENT * 4;
+
+    this.shader = triangulationTable + marchingCubesShader;
   }
 
   public async init(gridSize: number): Promise<void> {
@@ -24,7 +28,6 @@ class ComputeShader {
     const inputData = this.input.toFloat32Array();
 
     const pointsBufferSize = inputData.byteLength;
-    console.log({ pointsBufferSize });
 
     const pointsBuffer = this.device.createBuffer({
       mappedAtCreation: true,
@@ -46,7 +49,7 @@ class ComputeShader {
     });
 
     const shaderModule = this.device.createShaderModule({
-      code: shaderCode,
+      code: this.shader,
     });
 
     const computePipeline = this.device.createComputePipeline({
@@ -115,8 +118,6 @@ class ComputeShader {
     await this.gpuReadBuffer.mapAsync(GPUMapMode.READ);
     const arrayBuffer = this.gpuReadBuffer.getMappedRange();
 
-    console.log(arrayBuffer);
-
     const [triCount] = new Int32Array(
       arrayBuffer.slice(
         this.trisBufferSize,
@@ -124,10 +125,8 @@ class ComputeShader {
       )
     );
 
-    console.log({ triCount, bufSize: this.trisBufferSize });
+    console.log({ triCount });
 
-    // return new Float32Array(arrayBuffer.slice(0, this.trisBufferSize));
-    // return new Float32Array(arrayBuffer);
     return new Float32Array(
       arrayBuffer.slice(0, triCount * Float32Array.BYTES_PER_ELEMENT)
     );

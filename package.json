@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "@types/babylonjs": "^2.4.1",
-    "@types/jest": "^26.0.21",
+    "@types/jest": "^27.0.3",
     "@types/math-expression-evaluator": "^1.2.1",
     "@types/node": "^15.0.1",
     "@typescript-eslint/eslint-plugin": "^4.19.0",

@@ -3,7 +3,7 @@
  * The code executes when loaded in a browser.
  */
 import { setup, startLoop } from './main';
-import computMarchingCubes from './shaders/marching-cubes';
+import drawMarchingCubes from './draw-marching-cubes';
 
 window.onload = () => {
   const { pathname } = window.location;
@@ -14,7 +14,7 @@ window.onload = () => {
       startLoop();
       break;
     case '/shader':
-      computMarchingCubes();
+      drawMarchingCubes();
       break;
     default:
       console.log('unknown path', pathname);

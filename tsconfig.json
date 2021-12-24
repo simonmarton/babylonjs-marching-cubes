@@ -23,7 +23,7 @@
     "outDir": "./dist/tsc/",
     "types": ["node", "jest"],
     "lib": ["ES6", "DOM"],
-    "typeRoots": ["src/types/declarations.d.ts"]
+    "typeRoots": ["node_modules/@types", "src/types/declarations.d.ts"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "**/*.test.ts"]

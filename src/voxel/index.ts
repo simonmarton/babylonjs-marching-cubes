@@ -79,12 +79,15 @@ export default class Voxel {
       new Vector3(x, y + gridSize, z + gridSize),
     ];
 
+    // console.log('coords', coords);
+
     this.corners = coords.map((coord, idx) => {
       const intensity = this.intensityCalculator.getIntensity(coord);
       // let gizmo: Gizmo | null = null;
 
       if (this.options.debug) {
         // gizmo = this.createCornerGizmo(idx, coord, intensity);
+        // this.createCornerGizmo(idx, coord, intensity);
         this.addValueLabel(idx, coord, intensity);
       }
 
@@ -106,6 +109,7 @@ export default class Voxel {
     if (tris.length === 0) {
       return;
     }
+    console.log('tris', this.id, marchingCubeCorners, tris);
 
     let positions: number[] = [];
     tris.forEach((tri) => {
@@ -122,6 +126,7 @@ export default class Voxel {
     vertices.indices = Array(tris.length * 3)
       .fill(null)
       .map((_, i) => i);
+    // console.log(vertices);
     mesh.material = new StandardMaterial('march_mat', this.scene);
     mesh.material.backFaceCulling = false;
 

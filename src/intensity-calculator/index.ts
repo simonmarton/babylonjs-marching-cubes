@@ -1,5 +1,10 @@
-import { Vector3 } from '@babylonjs/core/Maths/math';
 import { Parser, Expression } from 'expr-eval';
+
+interface Vector3Like {
+  x: number;
+  y: number;
+  z: number;
+}
 
 export default class IntensityCalculator {
   private expression: Expression;
@@ -8,7 +13,7 @@ export default class IntensityCalculator {
     this.expression = Parser.parse(rawExpression);
   }
 
-  getIntensity({ x, y, z }: Vector3): number {
+  getIntensity({ x, y, z }: Vector3Like): number {
     const cacheKey = `${x}-${y}-${z}`;
     if (this.cache[cacheKey]) {
       return this.cache[cacheKey];

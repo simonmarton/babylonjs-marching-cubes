@@ -1,4 +1,4 @@
-import { Vector3 } from '@babylonjs/core/Maths/math';
+import { Vector3 } from '@babylonjs/core/Legacy/legacy';
 
 import {
   getEdgeConfigIdx,
@@ -27,7 +27,7 @@ describe('marching-cubes', () => {
     ).toBe(255);
   });
 
-  test('getEdgeConfig', () => {
+  test.only('getEdgeConfig', () => {
     expect(
       getEdgeConfig([false, false, false, false, false, false, false, false])
     ).toEqual([-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]);
